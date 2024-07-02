@@ -8,7 +8,6 @@ import android.net.ConnectivityManager
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
@@ -22,7 +21,6 @@ import com.example.vertex.data.models.ActivityConfig
 import com.example.vertex.data.models.User
 import com.example.vertex.databinding.ActivityTestBinding
 import com.example.vertex.utils.Constants.BASE_URL
-import com.example.vertex.utils.NetworkUtils
 import com.example.vertex.utils.SystemStateReceiver
 
 class TestActivity : AppCompatActivity() {
@@ -45,6 +43,9 @@ class TestActivity : AppCompatActivity() {
         onWifiChanged = { signalLevel ->
             wifiTextView.text = "Wi-Fi Signal Level: $signalLevel"
         },
+        onConnectionChange = { isConnected ->
+            if (!isConnected) showError("Wifi отключен")
+        }
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,6 +64,7 @@ class TestActivity : AppCompatActivity() {
             showError(getString(com.example.vertex.R.string.error_invalid_configuration))
         }
 
+
         observeViewModel()
         registerReceiver()
     }
@@ -71,6 +73,7 @@ class TestActivity : AppCompatActivity() {
         super.onDestroy()
         unregisterReceiver(systemStateReceiver)
     }
+
 
     private fun registerReceiver() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -165,11 +168,6 @@ class TestActivity : AppCompatActivity() {
             val button = Button(this).apply {
                 text = buttonConfig.caption
                 setOnClickListener {
-//                    try {
-//                        handleUserResponse(buttonConfig)
-//                    } catch (e: ConnectException) {
-//                        Log.d("MyLog", e.message.toString())
-//                    }
                     handleUserResponse(buttonConfig)
                 }
             }

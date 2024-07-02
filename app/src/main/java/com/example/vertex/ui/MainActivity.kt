@@ -13,7 +13,6 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.example.vertex.data.models.Configuration
 import com.example.vertex.databinding.ActivityMainBinding
-import com.example.vertex.utils.NetworkUtils
 import com.example.vertex.utils.SystemStateReceiver
 
 class MainActivity : AppCompatActivity() {
@@ -31,6 +30,9 @@ class MainActivity : AppCompatActivity() {
         },
         onWifiChanged = { signalLevel ->
             wifiTextView.text = "Wi-Fi Signal Level: $signalLevel"
+        },
+        onConnectionChange = { isConnected ->
+            if (!isConnected) showError("Wifi отключен")
         }
     )
 
@@ -58,6 +60,11 @@ class MainActivity : AppCompatActivity() {
         registerReceiver()
     }
 
+    override fun onStop() {
+        super.onStop()
+        unregisterReceiver(systemStateReceiver)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         unregisterReceiver(systemStateReceiver)
@@ -78,7 +85,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     @SuppressLint("SetTextI18n")
-    private fun setUpInfo(){
+    private fun setUpInfo() {
         batteryTextView = TextView(this).apply {
             textSize = 16f
             setPadding(0, 10, 0, 10)
@@ -94,7 +101,7 @@ class MainActivity : AppCompatActivity() {
         binding.main.addView(wifiTextView)
     }
 
-    private fun registerReceiver(){
+    private fun registerReceiver() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             registerReceiver(systemStateReceiver, IntentFilter().apply {
                 addAction(Intent.ACTION_BATTERY_CHANGED)
