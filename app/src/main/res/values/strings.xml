@@ -42,8 +42,14 @@
         libero vel nunc consequat, quis tincidunt nisl eleifend. Cras bibendum enim a justo luctus
         vestibulum. Fusce dictum libero quis erat maximus, vitae volutpat diam dignissim.
     </string>
-    <string name="error_fetching_data">Ошибка получения данных: %1$s</string>
     <string name="work_hours_text">Рабочие часы в месяц: %1$s</string>
     <string name="worked_out_hours_text">Отработанные часы: %1$s</string>
-    <string name="error_invalid_configuration">Invalid configuration</string>
+    <string name="error_connection">Ошибка соединения</string>
+    <string name="error_connection_description">Преравно Wifi соединение</string>
+    <string name="config_error">Ошибка конфигурации</string>
+    <string name="config_error_desription">Не удалось загрузить конфигурацию</string>
+    <string name="data_error">Ошибка получения данных</string>
+    <string name="data_error_description">Не удалось получить данные</string>
+    <string name="request_error">Ошибка запроса</string>
+    <string name="request_error_description">Некорректные данные запроса</string>
 </resources>

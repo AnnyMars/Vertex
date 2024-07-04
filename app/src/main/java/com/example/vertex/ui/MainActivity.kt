@@ -1,16 +1,17 @@
 package com.example.vertex.ui
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.net.wifi.WifiManager
-import android.os.Build
 import android.os.Bundle
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import com.example.vertex.R
 import com.example.vertex.data.models.Configuration
 import com.example.vertex.databinding.ActivityMainBinding
 import com.example.vertex.utils.SystemStateReceiver
@@ -23,6 +24,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var batteryTextView: TextView
     private lateinit var wifiTextView: TextView
 
+    private var isReceiverRegistered = false
+    private var hasShownConfigError = false
+    private var hasShownConnectionError = false
+
     @SuppressLint("SetTextI18n")
     private val systemStateReceiver = SystemStateReceiver(
         onBatteryChanged = { level ->
@@ -32,7 +37,13 @@ class MainActivity : AppCompatActivity() {
             wifiTextView.text = "Wi-Fi Signal Level: $signalLevel"
         },
         onConnectionChange = { isConnected ->
-            if (!isConnected) showError("Wifi отключен")
+            if (!isConnected) {
+                showAlertDialog(
+                    this,
+                    getString(R.string.error_connection),
+                    getString(R.string.error_connection_description)
+                )
+            }
         }
     )
 
@@ -41,33 +52,79 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        savedInstanceState?.let {
+            hasShownConfigError = it.getBoolean("hasShownConfigError", false)
+            hasShownConnectionError = it.getBoolean("hasShownConnectionError", false)
+        }
+
         viewModel.fetchConfiguration()
 
-        viewModel.configuration.observe(this) { result ->
+        observeViewModel()
 
+        setUpInfo()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (!isReceiverRegistered) {
+            val filter = IntentFilter().apply {
+                addAction(Intent.ACTION_BATTERY_CHANGED)
+                addAction(WifiManager.RSSI_CHANGED_ACTION)
+                addAction(ConnectivityManager.CONNECTIVITY_ACTION)
+            }
+            registerReceiver(systemStateReceiver, filter)
+            isReceiverRegistered = true
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (isReceiverRegistered) {
+            unregisterReceiver(systemStateReceiver)
+            isReceiverRegistered = false
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean("hasShownConfigError", hasShownConfigError)
+        outState.putBoolean("hasShownConnectionError", hasShownConnectionError)
+    }
+
+    private fun observeViewModel() {
+        viewModel.configuration.observe(this) { result ->
             result.fold(
                 onSuccess = { config ->
                     launchActivity(config)
                 },
                 onFailure = { error ->
-                    showError("Ошибка загрузки данных- ${error.message}")
+                    if (!hasShownConfigError) {
+                        if (!hasShownConnectionError) {
+                            hasShownConnectionError = true
+                            showAlertDialog(
+                                this,
+                                getString(R.string.error_connection),
+                                getString(R.string.error_connection_description)
+                            )
+                        }
+                        hasShownConfigError = true
+                        showAlertDialog(
+                            this,
+                            getString(R.string.config_error),
+                            getString(R.string.config_error_desription)
+                        )
+                    }
                 }
             )
         }
-        setUpInfo()
-
-
-        registerReceiver()
     }
 
-    override fun onStop() {
-        super.onStop()
-        unregisterReceiver(systemStateReceiver)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        unregisterReceiver(systemStateReceiver)
+    private fun showAlertDialog(context: Context, title: String, message: String) {
+        AlertDialog.Builder(context)
+            .setTitle(title)
+            .setMessage(message)
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     private fun launchActivity(config: Configuration) {
@@ -79,7 +136,10 @@ class MainActivity : AppCompatActivity() {
                     startActivity(intent)
                 }
 
-                else -> showError("Неизвестный тип activity: ${activityConfig.activity}")
+                else -> showAlertDialog(
+                    this,
+                    getString(R.string.request_error), getString(R.string.request_error_description)
+                )
             }
         }
     }
@@ -99,19 +159,14 @@ class MainActivity : AppCompatActivity() {
             text = "Wi-Fi Signal Level: N/A"
         }
         binding.main.addView(wifiTextView)
-    }
 
-    private fun registerReceiver() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            registerReceiver(systemStateReceiver, IntentFilter().apply {
-                addAction(Intent.ACTION_BATTERY_CHANGED)
-                addAction(WifiManager.RSSI_CHANGED_ACTION)
-                addAction(ConnectivityManager.CONNECTIVITY_ACTION)
-            }, RECEIVER_NOT_EXPORTED)
+        val button = android.widget.Button(this).apply {
+            text = "Повторить запрос"
+            setOnClickListener {
+                hasShownConfigError = false
+                viewModel.fetchConfiguration()
+            }
         }
-    }
-
-    private fun showError(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        binding.main.addView(button)
     }
 }

@@ -14,7 +14,6 @@ serialization = "1.6.3"
 retrofit = "2.9.0"
 loggingInterceptor = "4.9.3"
 okhttp = "4.12.0"
-hilt = "2.51"
 ksp = "1.9.21-1.0.15"
 viewmodel-lifecyclescope = "2.4.0"
 navigationFragmentKtx = "2.7.7"
@@ -30,8 +29,6 @@ androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
-hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
-hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization"}
 logging-interceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "loggingInterceptor" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
@@ -44,7 +41,6 @@ androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 jetbrainsKotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 

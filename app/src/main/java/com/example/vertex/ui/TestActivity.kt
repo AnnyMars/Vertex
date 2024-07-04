@@ -2,6 +2,7 @@ package com.example.vertex.ui
 
 import android.R
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.ConnectivityManager
@@ -14,8 +15,8 @@ import android.widget.AutoCompleteTextView
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.vertex.data.models.ActivityConfig
 import com.example.vertex.data.models.User
@@ -35,6 +36,10 @@ class TestActivity : AppCompatActivity() {
     private lateinit var batteryTextView: TextView
     private lateinit var wifiTextView: TextView
 
+    private var isReceiverRegistered = false
+
+    private var hasShownRequestError = false
+
     @SuppressLint("SetTextI18n")
     private val systemStateReceiver = SystemStateReceiver(
         onBatteryChanged = { level ->
@@ -44,7 +49,11 @@ class TestActivity : AppCompatActivity() {
             wifiTextView.text = "Wi-Fi Signal Level: $signalLevel"
         },
         onConnectionChange = { isConnected ->
-            if (!isConnected) showError("Wifi отключен")
+            if (!isConnected) showAlertDialog(
+                this,
+                getString(com.example.vertex.R.string.error_connection),
+                getString(com.example.vertex.R.string.error_connection_description)
+            )
         }
     )
 
@@ -52,6 +61,10 @@ class TestActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityTestBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        savedInstanceState?.let {
+            hasShownRequestError = it.getBoolean("hasShownRequestError", false)
+        }
 
         val config = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             intent.getSerializableExtra("config", ActivityConfig::class.java)
@@ -61,28 +74,43 @@ class TestActivity : AppCompatActivity() {
         if (config != null) {
             setupUI(config)
         } else {
-            showError(getString(com.example.vertex.R.string.error_invalid_configuration))
+            showAlertDialog(
+                this,
+                getString(com.example.vertex.R.string.config_error),
+                getString(com.example.vertex.R.string.config_error_desription)
+            )
         }
 
 
         observeViewModel()
-        registerReceiver()
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        unregisterReceiver(systemStateReceiver)
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean("hasShownRequestError", hasShownRequestError)
     }
 
-
-    private fun registerReceiver() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            registerReceiver(systemStateReceiver, IntentFilter().apply {
+    override fun onStart() {
+        super.onStart()
+        if (!isReceiverRegistered) {
+            val filter = IntentFilter().apply {
                 addAction(Intent.ACTION_BATTERY_CHANGED)
-                addAction(WifiManager.RSSI_CHANGED_ACTION)
                 addAction(ConnectivityManager.CONNECTIVITY_ACTION)
-            }, RECEIVER_NOT_EXPORTED)
+                addAction(WifiManager.RSSI_CHANGED_ACTION)
+            }
+            registerReceiver(systemStateReceiver, filter)
+            isReceiverRegistered = true
         }
+    }
+
+
+    override fun onStop() {
+        super.onStop()
+        if (isReceiverRegistered) {
+            unregisterReceiver(systemStateReceiver)
+            isReceiverRegistered = false
+        }
+
     }
 
     @SuppressLint("SetTextI18n")
@@ -176,6 +204,15 @@ class TestActivity : AppCompatActivity() {
     }
 
     private fun handleUserResponse(button: com.example.vertex.data.models.Button) {
+        if (hasShownRequestError) {
+            showAlertDialog(
+                this,
+                getString(com.example.vertex.R.string.data_error),
+                getString(com.example.vertex.R.string.data_error_description)
+            )
+            hasShownRequestError = !hasShownRequestError
+            return
+        }
         when (button.formAction) {
             "/" -> viewModel.fetchUserData("")
             else -> {
@@ -189,18 +226,25 @@ class TestActivity : AppCompatActivity() {
             result.fold(
                 onSuccess = { userResponse ->
                     if (userResponse.error.isError) {
-                        showError(userResponse.error.description)
+                        showAlertDialog(
+                            this,
+                            getString(com.example.vertex.R.string.request_error),
+                            userResponse.error.description
+                        )
                     } else {
                         updateUIWithUserData(userResponse.data.user)
                     }
                 },
-                onFailure = { exception ->
-                    showError(
-                        getString(
-                            com.example.vertex.R.string.error_fetching_data,
-                            exception.message
+                onFailure = {
+                    if (!hasShownRequestError) {
+                        hasShownRequestError = true
+                        showAlertDialog(
+                            this,
+                            getString(com.example.vertex.R.string.data_error),
+                            getString(com.example.vertex.R.string.data_error_description)
                         )
-                    )
+                    }
+
                 }
             )
         }
@@ -216,7 +260,12 @@ class TestActivity : AppCompatActivity() {
             getString(com.example.vertex.R.string.worked_out_hours_text, user.workedOutHours)
     }
 
-    private fun showError(error: String) {
-        Toast.makeText(this, error, Toast.LENGTH_SHORT).show()
+    private fun showAlertDialog(context: Context, title: String, message: String) {
+        AlertDialog.Builder(context)
+            .setTitle(title)
+            .setMessage(message)
+            .setPositiveButton("OK", null)
+            .show()
     }
+
 }

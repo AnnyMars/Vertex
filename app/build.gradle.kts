@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.hilt)
     alias(libs.plugins.serialization)
 }
 
@@ -56,9 +55,6 @@ dependencies {
     implementation(libs.viewmodel.lifecycle)
     implementation (libs.androidx.fragment.ktx)
 
-    //Hilt
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
 
     //Network
     implementation (libs.retrofit)

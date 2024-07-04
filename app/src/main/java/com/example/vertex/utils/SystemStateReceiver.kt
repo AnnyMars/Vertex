@@ -20,7 +20,7 @@ class SystemStateReceiver(
     private val onConnectionChange: (Boolean) -> Unit
 ) : BroadcastReceiver() {
 
-    private var wasConnected: Boolean? = null
+    private var wasConnected: Boolean? = false
 
     override fun onReceive(context: Context, intent: Intent?) {
 
@@ -86,7 +86,7 @@ class SystemStateReceiver(
             })
     }
 
-    private fun isOnline(context: Context?): Boolean {
+    fun isOnline(context: Context?): Boolean {
         if (context == null) return false
         val connectivityManager =
             context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -95,17 +95,17 @@ class SystemStateReceiver(
                 connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
             if (capabilities != null) {
                 when {
-                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> {
-                        return true
-                    }
+//                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> {
+//                        return true
+//                    }
 
                     capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> {
                         return true
                     }
 
-                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> {
-                        return true
-                    }
+//                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> {
+//                        return true
+//                    }
                 }
             }
         } else {
@@ -119,4 +119,5 @@ class SystemStateReceiver(
 
 
 }
+
 
